@@ -58,32 +58,38 @@ Support toggle for shell, term, ansi-term, eshell and ielm."
 
 ;;; Internal functions and declarations
 (defun tt--start (shell name)
+  "Create a new SHELL for a NAME buffer"
   (if (or (eq shell 'term) (eq shell 'ansi-term))
       (funcall shell (getenv "SHELL"))
     (funcall shell))
-  (when-let ((proc (get-buffer-process (get-buffer name))))
-    (set-process-query-on-exit-flag proc term-toggle-confirm-exit)
-    (when term-toggle-kill-buffer-on-process-exit
-      (set-process-sentinel
-       proc (lambda (__ evt)
-              (when (string-match-p "\\(?:exited\\|finished\\)" evt)
-                (kill-buffer)))))))
+  (let ((proc (get-buffer-process (get-buffer name))))
+    (when proc
+      (set-process-query-on-exit-flag proc term-toggle-confirm-exit)
+      (when term-toggle-kill-buffer-on-process-exit
+        (set-process-sentinel
+         proc (lambda (__ evt)
+                (when (string-match-p "\\(?:exited\\|finished\\)" evt)
+                  (kill-buffer))))))))
 
 (defun tt--toggle (term-buffer)
-  (if-let ((term-window (get-buffer-window term-buffer)))
-    (progn
-      (bury-buffer term-buffer)
-      (delete-window term-window))
-    (split-window-vertically)
-    (other-window 1)
-    (pop-to-buffer-same-window term-buffer t)
-    (set-window-dedicated-p term-window t)
-    (when (>= (window-total-height (selected-window))
-              term-toggle-minimum-split-height)
-      (let ((delta (- (window-height (selected-window)) term-toggle-default-height)))
-        (when (> delta 0) (shrink-window delta))))))
+  "Toggle a term-toggle window for a buffer TERM-BUFFER"
+  (let ((term-window (get-buffer-window term-buffer)))
+    (if term-window
+        (progn
+          (bury-buffer term-buffer)
+          (delete-window term-window))
+      (split-window-vertically)
+      (other-window 1)
+      (pop-to-buffer-same-window term-buffer t)
+      (set-window-dedicated-p term-window t)
+      (when (>= (window-total-height (selected-window))
+                term-toggle-minimum-split-height)
+        (let ((delta (- (window-height (selected-window))
+                        term-toggle-default-height)))
+          (when (> delta 0) (shrink-window delta)))))))
 
 (defun term-toggle (shell)
+  "Toggle a term with shell names SHELL"
   (let ((name (format "*%s*" (if (eq shell 'term) "terminal" shell)))
         (original-buffer (current-buffer)))
     (unless (get-buffer name)

@@ -21,9 +21,11 @@ features to quickly kill buffer or it's process.
 
 ## Install
 
-For the moment this is not in any package repository, so you will have to download it from the git and install with package with
+For the moment this is not in any package repository. You can download it from the git repo and install with package.el with
 
-    M-x package-install-file
+    M-x package-install-file RET 
+
+alternatively, if you are using Emacs 29.0 and later, you can install via package-vc, directly from the remote repo. See the Emacs manual for use-package and package-vc.
 
 I will see if they would like to have it in Melpa.
 
