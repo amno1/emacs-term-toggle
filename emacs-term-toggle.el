@@ -1,11 +1,11 @@
-;;; term-toggle.el --- Toggle to and from the *terminal* buffer   -*- lexical-binding: t; -*-
+;;; emacs-term-toggle.el --- Toggle to and from the *terminal* buffer   -*- lexical-binding: t; -*-
 
 ;; Filename: term-toggle.el
 ;; Description: Toggle a dedicated terminal
 ;; Author: Joseph <jixiuf@gmail.com>, Yatao <yatao.li@live.com>, Arthur <arthur.miller@live.com>
 ;; Created: 2011-03-02
-;; Version: 1.0
-;; URL: https://github.com/v-yadli/emacs-term-toggle
+;; Version: 2.0.0
+;; URL: https://github.com/amno1/emacs-term-toggle
 ;; Keywords:  term toggle shell
 ;; Compatibility: (Test on GNU Emacs 28.0.50).
 ;;
@@ -26,33 +26,14 @@
 ;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth
 ;; Floor, Boston, MA 02110-1301, USA.
 ;;
-
-;;; Commentary:
-;; Derived from Joseph <jixiuf@gmail.com> (URL:
-;; http://www.emacswiki.org/term-toggle.el), this plugin brings up a
-;; quake-style console with commands term-toggle{,-cd}
-;; The major difference with Joseph's version is that maximized
-;; console feature is removed (in the original version sometimes it
-;; gets stuck in maximized state, possibly because the window
-;; configuration is corrupted). Also, this plugin determines whether
-;; to split a new window for the console, or replace the buffer of
-;; current selected window if height is not enough for a
-;; split. Another feature is that this plugin will detect the status
-;; of the terminal. When there's no process running in *terminal*
-;; buffer, it will fire up another one.
-
-;;; History:
-;; 2021-09-16 A. Miller simplified and refactored code
-;; 2021-09-13 A. Miller added support for shell, ansi-term and ielm.
-;; 2021-09-04 A. Miller added support to exit term without quering for exit-confirm.
-;; 2019-01-23 A. Miller added eshell toggle
-
+;; Code
 
 ;;; Customizable Options:
 (defgroup term-toggle nil
   "Quake style console toggle in current working directory.
 Support toggle for shell, term, ansi-term, eshell and ielm."
   :prefix "term-toggle-"
+  :prefix "tt-"
   :group 'applications)
 
 (defcustom term-toggle-confirm-exit nil
@@ -76,7 +57,7 @@ Support toggle for shell, term, ansi-term, eshell and ielm."
   :group 'term-toggle)
 
 ;;; Internal functions and declarations
-(defun term-toggle--start (shell name)
+(defun tt--start (shell name)
   (if (or (eq shell 'term) (eq shell 'ansi-term))
       (funcall shell (getenv "SHELL"))
     (funcall shell))
@@ -88,7 +69,7 @@ Support toggle for shell, term, ansi-term, eshell and ielm."
               (when (string-match-p "\\(?:exited\\|finished\\)" evt)
                 (kill-buffer)))))))
 
-(defun term-toggle--toggle (term-buffer)
+(defun tt--toggle (term-buffer)
   (if-let ((term-window (get-buffer-window term-buffer)))
     (progn
       (bury-buffer term-buffer)
@@ -106,9 +87,9 @@ Support toggle for shell, term, ansi-term, eshell and ielm."
   (let ((name (format "*%s*" (if (eq shell 'term) "terminal" shell)))
         (original-buffer (current-buffer)))
     (unless (get-buffer name)
-      (term-toggle--start shell name)
+      (tt--start shell name)
       (pop-to-buffer-same-window original-buffer))
-    (term-toggle--toggle (get-buffer name))))
+    (tt--toggle (get-buffer name))))
 
 ;;; Commands
 ;;;###autoload
@@ -138,4 +119,4 @@ Support toggle for shell, term, ansi-term, eshell and ielm."
 
 (provide 'term-toggle)
 
-;;; term-toggle.el ends here
+;;; emas-term-toggle.el ends here
