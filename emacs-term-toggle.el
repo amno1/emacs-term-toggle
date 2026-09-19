@@ -39,7 +39,7 @@
 ;; `term-toggle-default-shell' to change the default, or call one of
 ;; the dedicated commands `term-toggle-ansi', `term-toggle-term',
 ;; `term-toggle-shell', `term-toggle-eshell', `term-toggle-ielm'
-;; or `term-toggle-vterm'.
+;; or `term-toggle-vterm' or `term-toggle-ghostel'.
 ;;
 ;; `term-toggle-slime' toggles a SLIME REPL backed by SBCL (or the
 ;; Lisp in `term-toggle-slime-lisp').  SLIME maintains a single REPL
@@ -67,7 +67,8 @@ to be installed."
                  (const :tag "shell" shell)
                  (const :tag "eshell" eshell)
                  (const :tag "ielm" ielm)
-                 (const :tag "vterm" vterm))
+                 (const :tag "vterm" vterm)
+                 (const :tag "ghostel" ghostel))
   :group 'term-toggle)
 
 (defcustom term-toggle-scope 'directory
@@ -137,11 +138,18 @@ the SIDE argument of `split-window'."
 ;;; Internals
 
 (declare-function vterm "vterm" (&optional buffer-name))
+(declare-function ghostel "ghostel" ())
+(defvar ghostel-buffer-name)
 
 (defun tt--vterm-available-p ()
   "Return non-nil if the vterm package is available."
   (or (fboundp 'vterm)
       (require 'vterm nil t)))
+
+(defun tt--ghostel-available-p ()
+  "Return non-nil if the ghostel package is available."
+  (or (fboundp 'ghostel)
+      (require 'ghostel nil t)))
 
 (defvar-local tt--terminal-key nil
   "Identify a term-toggle terminal buffer.
@@ -218,14 +226,19 @@ directory at all."
        ((eq shell 'vterm)
         (unless (tt--vterm-available-p)
           (user-error "vterm is not installed; cannot start a vterm terminal"))
-        ;; vterm's signature has varied across releases; the current
-        ;; one accepts an optional buffer name.  Fall back to renaming
-        ;; if the installed vterm only takes zero arguments.
         (condition-case nil
             (vterm name)
           (wrong-number-of-arguments
            (vterm)
            (rename-buffer name t))))
+       ((eq shell 'ghostel)
+        (unless (tt--ghostel-available-p)
+          (user-error "ghostel is not installed; cannot start a ghostel terminal"))
+        ;; Ghostel takes no buffer-name argument; it reads
+        ;; `ghostel-buffer-name' instead.  Bind it so the buffer gets
+        ;; the name term-toggle expects.
+        (let ((ghostel-buffer-name name))
+          (ghostel)))
        ((eq shell 'shell)
         (shell name))
        ((eq shell 'eshell)
@@ -441,6 +454,14 @@ use `term-toggle-default-shell'."
 Requires the optional vterm package to be installed."
   (interactive)
   (term-toggle 'vterm))
+
+;;;###autoload
+(defun term-toggle-ghostel ()
+  "Toggle a Ghostel terminal for the current directory.
+
+Requires the optional ghostel package to be installed."
+  (interactive)
+  (term-toggle 'ghostel))
 
 ;; ;;;###autoload
 ;; (defun term-toggle-slime ()
