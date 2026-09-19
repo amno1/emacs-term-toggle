@@ -38,7 +38,8 @@
 ;; `term-toggle' launches `ansi-term' by default.  Customize
 ;; `term-toggle-default-shell' to change the default, or call one of
 ;; the dedicated commands `term-toggle-ansi', `term-toggle-term',
-;; `term-toggle-shell', `term-toggle-eshell' or `term-toggle-ielm'.
+;; `term-toggle-shell', `term-toggle-eshell', `term-toggle-ielm'
+;; or `term-toggle-vterm'.
 ;;
 ;; `term-toggle-slime' toggles a SLIME REPL backed by SBCL (or the
 ;; Lisp in `term-toggle-slime-lisp').  SLIME maintains a single REPL
@@ -58,14 +59,15 @@ Support toggle for shell, term, ansi-term, eshell, ielm and slime."
 
 (defcustom term-toggle-default-shell 'ansi-term
   "Default shell used by `term-toggle'.
-Must be one of `ansi-term', `term', `shell', `eshell' or `ielm'."
+Must be one of `ansi-term', `term', `shell', `eshell', `ielm' or
+`vterm'.  The `vterm' choice requires the optional vterm package
+to be installed."
   :type '(choice (const :tag "ansi-term" ansi-term)
                  (const :tag "term" term)
                  (const :tag "shell" shell)
                  (const :tag "eshell" eshell)
                  (const :tag "ielm" ielm)
-                 ;; (const :tag "slime" slime)
-                 )
+                 (const :tag "vterm" vterm))
   :group 'term-toggle)
 
 (defcustom term-toggle-scope 'directory
@@ -133,6 +135,13 @@ the SIDE argument of `split-window'."
 
 
 ;;; Internals
+
+(declare-function vterm "vterm" (&optional buffer-name))
+
+(defun tt--vterm-available-p ()
+  "Return non-nil if the vterm package is available."
+  (or (fboundp 'vterm)
+      (require 'vterm nil t)))
 
 (defvar-local tt--terminal-key nil
   "Identify a term-toggle terminal buffer.
@@ -206,6 +215,17 @@ directory at all."
       (cond
        ((memq shell '(term ansi-term))
         (funcall shell shell-program name))
+       ((eq shell 'vterm)
+        (unless (tt--vterm-available-p)
+          (user-error "vterm is not installed; cannot start a vterm terminal"))
+        ;; vterm's signature has varied across releases; the current
+        ;; one accepts an optional buffer name.  Fall back to renaming
+        ;; if the installed vterm only takes zero arguments.
+        (condition-case nil
+            (vterm name)
+          (wrong-number-of-arguments
+           (vterm)
+           (rename-buffer name t))))
        ((eq shell 'shell)
         (shell name))
        ((eq shell 'eshell)
@@ -413,6 +433,14 @@ use `term-toggle-default-shell'."
   "Toggle an `ielm' terminal for the current directory."
   (interactive)
   (term-toggle 'ielm))
+
+;;;###autoload
+(defun term-toggle-vterm ()
+  "Toggle a libvterm terminal for the current directory.
+
+Requires the optional vterm package to be installed."
+  (interactive)
+  (term-toggle 'vterm))
 
 ;; ;;;###autoload
 ;; (defun term-toggle-slime ()
